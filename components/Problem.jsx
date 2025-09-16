@@ -35,7 +35,7 @@ const Problem = ({ problem, onCorrect }) => {
   const inputRef = useRef(null);
 
   // ✅ UseMemo for stable audio instance
-  const audio = useMemo(() => new Audio("/success.mp3"), []);
+  const audio = useMemo(() => new Audio("./success.mp3"), []);
 
   // ----------------- Reset on New Problem -----------------
   useEffect(() => {
