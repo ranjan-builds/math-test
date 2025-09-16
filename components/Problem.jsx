@@ -33,9 +33,16 @@ const Problem = ({ problem, onCorrect }) => {
 
   const recognitionRef = useRef(null);
   const inputRef = useRef(null);
+  const shouldListenRef = useRef(false); // 🔧 Added ref to track intended listening state
+  const audioInitialized = useRef(false); // Track if audio context is initialized
 
-  // ✅ UseMemo for stable audio instance
-  const audio = useMemo(() => new Audio("./success.mp3"), []);
+  // ✅ UseMemo for stable audio instance with Android handling
+  const audio = useMemo(() => {
+    const audioInstance = new Audio("./success.mp3");
+    audioInstance.volume = 0.5; // Lower volume for better UX
+    audioInstance.preload = "auto";
+    return audioInstance;
+  }, []);
 
   // ----------------- Reset on New Problem -----------------
   useEffect(() => {
@@ -50,12 +57,26 @@ const Problem = ({ problem, onCorrect }) => {
       const endTime = Date.now();
       const elapsed = (endTime - startTime) / 1000;
 
-      // ✅ play success sound
-      audio.currentTime = 0;
-      audio.play().catch((err) => console.error("Audio play error:", err));
+      // ✅ Try to play success sound (skip on mobile to avoid issues)
+      const isMobile =
+        /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+
+      if (!isMobile) {
+        const playAudio = async () => {
+          try {
+            audio.currentTime = 0;
+            await audio.play();
+          } catch (err) {
+            console.log("Audio autoplay blocked:", err.name);
+          }
+        };
+        playAudio();
+      }
 
       // ⏱ wait before moving to next
-      const timer = setTimeout(() => onCorrect(elapsed), 1000);
+      const timer = setTimeout(() => onCorrect(elapsed), 200);
       return () => clearTimeout(timer);
     }
   }, [userAnswer, problem, startTime, onCorrect, audio]);
@@ -70,41 +91,114 @@ const Problem = ({ problem, onCorrect }) => {
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.continuous = true;
-    recognition.interimResults = false;
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.continuous = true;
+      recognition.interimResults = false;
 
-    recognition.onresult = (event) => {
-      const transcript =
-        event.results[event.results.length - 1][0].transcript.trim();
-      const spokenNumber = transcript.replace(/[^0-9.-]/g, "");
-      if (spokenNumber) setUserAnswer(spokenNumber);
-    };
+      recognition.onstart = () => {
+        console.log("Speech recognition started");
+        setListening(true);
+      };
 
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      setListening(false);
-    };
+      recognition.onresult = (event) => {
+        try {
+          const transcript =
+            event.results[event.results.length - 1][0].transcript.trim();
+          console.log("Speech recognized:", transcript);
+          const spokenNumber = transcript.replace(/[^0-9.-]/g, "");
+          if (spokenNumber) setUserAnswer(spokenNumber);
+        } catch (error) {
+          console.error("Error processing speech result:", error);
+        }
+      };
 
-    if (listening) {
-      setTimeout(() => recognition.start(), 200);
+      recognition.onerror = (event) => {
+        const errorMessage = event?.error || "Unknown speech recognition error";
+        console.error("Speech recognition error:", errorMessage);
+        setListening(false);
+        shouldListenRef.current = false;
+      };
+
+      // 🔧 Fixed onend handler
+      recognition.onend = () => {
+        console.log("Speech recognition ended");
+        setListening(false);
+
+        // Only restart if we should still be listening
+        if (shouldListenRef.current) {
+          // Small delay to prevent immediate restart issues
+          setTimeout(() => {
+            if (shouldListenRef.current && recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch (error) {
+                console.error("Error restarting recognition:", error);
+                setListening(false);
+                shouldListenRef.current = false;
+              }
+            }
+          }, 100);
+        }
+      };
+
+      recognitionRef.current = recognition;
+    } catch (error) {
+      console.error("Error initializing speech recognition:", error);
     }
 
-    recognitionRef.current = recognition;
-  }, [listening]);
+    // Cleanup on unmount
+    return () => {
+      if (recognitionRef.current) {
+        shouldListenRef.current = false;
+        try {
+          recognitionRef.current.stop();
+        } catch (error) {
+          console.error("Error stopping recognition on cleanup:", error);
+        }
+      }
+    };
+  }, []); // 🔧 Removed 'listening' dependency to prevent recreation
 
   // ----------------- Toggle Listening -----------------
   const toggleListening = useCallback(() => {
     if (!recognitionRef.current) return;
-    if (listening) {
-      recognitionRef.current.stop();
-      setListening(false);
-    } else {
-      recognitionRef.current.start();
-      setListening(true);
+
+    // Initialize audio on first user interaction (fixes Android autoplay)
+    if (!audioInitialized.current) {
+      audio.load();
+      // Try to play and immediately pause to unlock audio context
+      audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audioInitialized.current = true;
+        })
+        .catch(() => {
+          // Still blocked, but we tried
+          console.log("Audio initialization blocked");
+        });
     }
-  }, [listening]);
+
+    if (listening || shouldListenRef.current) {
+      // Stop listening
+      console.log("Stopping speech recognition");
+      shouldListenRef.current = false;
+      recognitionRef.current.stop();
+    } else {
+      // Start listening
+      console.log("Starting speech recognition");
+      shouldListenRef.current = true;
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error("Error starting recognition:", error);
+        shouldListenRef.current = false;
+      }
+    }
+  }, [listening, audio]);
 
   // ----------------- Input Validation -----------------
   const handleChange = (e) => {
