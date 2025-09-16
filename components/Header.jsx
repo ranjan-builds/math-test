@@ -9,7 +9,7 @@ const Header = () => {
         <h1 className="text-xl font-bold">Math Trainer</h1>
       </div>
       <a
-        href="https://github.com/your-github-profile/your-repo-name"
+        href="https://github.com/ranjan-builds"
         target="_blank"
         rel="noopener noreferrer"
         className="text-white hover:text-gray-400"
