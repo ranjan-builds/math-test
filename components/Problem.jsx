@@ -87,9 +87,9 @@ const Problem = ({ problem, onCorrect }) => {
       setListening(false);
     };
 
-    recognition.onend = () => {
-      if (listening) recognition.start(); // auto-restart
-    };
+    if (listening) {
+      setTimeout(() => recognition.start(), 200);
+    }
 
     recognitionRef.current = recognition;
   }, [listening]);
