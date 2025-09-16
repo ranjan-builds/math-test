@@ -1,103 +1,252 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState, useCallback, useMemo } from "react";
+import ProblemRange from "@/components/ProblemRange";
+import Selections from "@/components/Selections";
+import States from "@/components/States";
+import Problem from "@/components/Problem";
+import Header from "@/components/Header";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { RotateCcw, BadgeCheck } from "lucide-react";
+
+// ------------------- Helpers -------------------
+const getRandomNumber = (digits) => {
+  const d = Number(digits);
+  const min = Math.pow(10, d - 1);
+  const max = Math.pow(10, d) - 1;
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+};
+
+const calculate = (num1, num2, op) => {
+  switch (op) {
+    case "+":
+      return num1 + num2;
+    case "-":
+      return num1 - num2;
+    case "*":
+      return num1 * num2;
+    case "/":
+      return Math.floor(num1 / num2);
+    default:
+      return null;
+  }
+};
+
+const formatTime = (totalSeconds) => {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60);
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    (
+      `${minutes ? `${minutes} minute${minutes > 1 ? "s " : " "}` : ""}` +
+      `${seconds ? `${seconds} second${seconds > 1 ? "s" : ""}` : ""}`
+    ).trim() || "0 seconds"
+  );
+};
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+// ------------------- Main Component -------------------
+export default function Home() {
+  // Group state for quiz setup
+  const [settings, setSettings] = useState({
+    count: 5,
+    firstDigits: "2",
+    secondDigits: "2",
+    operation: "+",
+  });
+
+  // Quiz state
+  const [isTesting, setIsTesting] = useState(false);
+  const [problems, setProblems] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [score, setScore] = useState(0);
+  const [finished, setFinished] = useState(false);
+
+  // ------------------- Generators -------------------
+  const generateProblems = useCallback(() => {
+    const { count, firstDigits, secondDigits, operation } = settings;
+
+    return Array.from({ length: count }, () => {
+      let num1 = getRandomNumber(firstDigits);
+      let num2 = getRandomNumber(secondDigits);
+
+      if ((operation === "-" || operation === "/") && num1 < num2) {
+        [num1, num2] = [num2, num1]; // swap
+      }
+
+      if (operation === "/") {
+        if (num2 === 0) num2 = 1;
+
+        // ensure divisor is smaller than dividend but not equal
+        while (num1 % num2 !== 0 || num1 === num2 || num2 === 1) {
+          num1 = getRandomNumber(firstDigits);
+          num2 = getRandomNumber(secondDigits) || 1;
+        }
+      }
+
+      return {
+        num1,
+        num2,
+        op: operation,
+        answer: calculate(num1, num2, operation),
+        time: null,
+      };
+    });
+  }, [settings]);
+
+  // ------------------- Handlers -------------------
+  const handleGenerate = useCallback(() => {
+    setProblems(generateProblems());
+    setCurrentIndex(0);
+    setScore(0);
+    setFinished(false);
+    setIsTesting(true);
+  }, [generateProblems]);
+
+  const handleAbort = () => {
+    setIsTesting(false);
+    setFinished(false);
+    setProblems([]);
+  };
+
+  const handleCorrect = (elapsedTime) => {
+    setScore((s) => s + 1);
+
+    setProblems((prev) => {
+      const updated = [...prev];
+      updated[currentIndex].time = elapsedTime;
+      return updated;
+    });
+
+    if (currentIndex + 1 < problems.length) {
+      setCurrentIndex((i) => i + 1);
+    } else {
+      setFinished(true);
+      setIsTesting(false);
+    }
+  };
+
+  // ------------------- Keyboard Shortcuts -------------------
+  useEffect(() => {
+    const listener = (e) => {
+      if (e.key === "Enter" && !isTesting && !finished) {
+        e.preventDefault();
+        handleGenerate();
+      }
+    };
+    window.addEventListener("keydown", listener);
+    return () => window.removeEventListener("keydown", listener);
+  }, [isTesting, finished, handleGenerate]);
+
+  // ------------------- Derived Data -------------------
+  const totalTime = useMemo(
+    () => problems.reduce((sum, p) => sum + (p.time || 0), 0),
+    [problems]
+  );
+
+  // ------------------- Render -------------------
+  return (
+    <>
+      <Header />
+      <div className="flex items-center justify-center mt-12 lg:mt-0 min-h-screen mx-auto">
+        <div className="w-full max-w-xl mx-auto bg-neutral-950 lg:bg-neutral-950 border-0 lg:border lg:border-neutral-800 rounded-none lg:rounded-2xl lg:shadow-sm p-1">
+          {/* Setup Screen */}
+          {!isTesting && !finished && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleGenerate();
+              }}
+            >
+              <div className="flex flex-col gap-6 p-8 rounded-2xl lg:bg-gradient-to-t from-neutral-950/50 to-neutral-900/50">
+                <Selections
+                  firstDigits={settings.firstDigits}
+                  onFirstChange={(val) =>
+                    setSettings((s) => ({ ...s, firstDigits: val }))
+                  }
+                  operation={settings.operation}
+                  onOperationChange={(val) =>
+                    setSettings((s) => ({ ...s, operation: val }))
+                  }
+                  secondDigits={settings.secondDigits}
+                  onSecondValueChange={(val) =>
+                    setSettings((s) => ({ ...s, secondDigits: val }))
+                  }
+                />
+                <ProblemRange
+                  count={settings.count}
+                  onSliderChange={(val) =>
+                    setSettings((s) => ({ ...s, count: val[0] }))
+                  }
+                  onInputChange={(e) =>
+                    setSettings((s) => ({
+                      ...s,
+                      count: Number(e.target.value),
+                    }))
+                  }
+                />
+                <Button type="submit" className="w-full mt-3">
+                  Generate
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {/* Test Screen */}
+          {isTesting && !finished && (
+            <div className="flex flex-col">
+              <States
+                count={settings.count}
+                currentIndex={currentIndex}
+                setAboart={handleAbort}
+                finished={finished}
+              />
+              {problems.length > 0 && (
+                <Problem
+                  problem={problems[currentIndex]}
+                  onCorrect={handleCorrect}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Finish Screen */}
+          {finished && (
+            <div className="mt-6 text-center space-y-4 px-8 pb-8">
+              <h3 className="text-lg font-bold flex items-center justify-center gap-2">
+                <span className="text-green-400">
+                  <BadgeCheck />
+                </span>
+                Quiz Finished!
+              </h3>
+
+              <p>
+                <b>{problems.length}</b> Problems in{" "}
+                <b>{formatTime(totalTime)}</b>
+              </p>
+
+              <div className="mt-4 text-left">
+                <h4 className="font-semibold mb-2">Your Results:</h4>
+                <ScrollArea className="w-full h-48">
+                  <div>
+                    {problems.map((p, i) => (
+                      <p key={i} className="font-mono">
+                        {i + 1}. {p.num1} {p.op} {p.num2} = {p.answer}
+                        <span className="ml-2 text-sm text-gray-500">
+                          ({p.time?.toFixed(2)}s)
+                        </span>
+                      </p>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              <Button onClick={handleGenerate} className="mt-4 w-full">
+                <RotateCcw /> Restart
+              </Button>
+            </div>
+          )}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </>
   );
 }
