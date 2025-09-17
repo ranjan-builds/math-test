@@ -5,25 +5,9 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import { Plus, Minus, Divide, X, Mic, MicOff } from "lucide-react";
+import {  Mic, MicOff } from "lucide-react";
+import { OperationIcon } from "@/lib/OperationIcon";
 
-// ----------------- Operation Icon -----------------
-const OperationIcon = ({ op }) => {
-  switch (op) {
-    case "+":
-      return <Plus />;
-    case "-":
-      return <Minus />;
-    case "×":
-    case "*":
-      return <X />;
-    case "÷":
-    case "/":
-      return <Divide />;
-    default:
-      return <span>{op}</span>;
-  }
-};
 
 // ----------------- Problem Component -----------------
 const Problem = ({ problem, onCorrect }) => {
@@ -203,12 +187,19 @@ const Problem = ({ problem, onCorrect }) => {
   // ----------------- Input Validation -----------------
   const handleChange = (e) => {
     const val = e.target.value;
-    if (/^-?\d*\.?\d*$/.test(val)) setUserAnswer(val);
+
+    // get the correct answer length
+    const maxLength = problem.answer.toString().length;
+
+    // allow only valid numbers AND restrict length
+    if (/^-?\d*\.?\d*$/.test(val) && val.length <= maxLength) {
+      setUserAnswer(val);
+    }
   };
 
   return (
     <div className="w-full flex flex-col items-center bg-gradient-to-t from-neutral-950 to-neutral-900 rounded-t-2xl lg:rounded-2xl pt-10">
-      <div className="flex flex-col items-end text-5xl">
+      <div className="flex flex-col items-end text-7xl">
         <span>{problem.num1}</span>
         <div className="flex items-center">
           <span className="mr-3">
@@ -222,7 +213,7 @@ const Problem = ({ problem, onCorrect }) => {
         <div className="mt-1 flex flex-col items-center">
           <input
             ref={inputRef}
-            className="inp w-22 outline-0 text-right text-4xl bg-transparent"
+            className="inp w-26 outline-0 text-right text-6xl bg-transparent"
             type="text"
             inputMode="decimal"
             value={userAnswer}

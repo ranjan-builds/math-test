@@ -1,4 +1,4 @@
-import { Plus, X, Minus, Divide } from "lucide-react";
+import { Plus, X, Minus, Divide, CircleDot } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -64,6 +64,9 @@ const Selections = ({
             </SelectItem>
             <SelectItem value="/">
               <Divide className="mr-1" /> Division
+            </SelectItem>
+            <SelectItem value="digitSum">
+              <CircleDot className="mr-1" /> Digital Sum
             </SelectItem>
           </SelectContent>
         </Select>

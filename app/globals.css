@@ -137,5 +137,7 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 .inp {
-  /* caret-color: transparent; */
+  caret-color: transparent;
 }
+
+/* Prevent horizontal overflow on small devices */

@@ -8,7 +8,8 @@ import Problem from "@/components/Problem";
 import Header from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RotateCcw, BadgeCheck } from "lucide-react";
+import { RotateCcw, BadgeCheck, Plus } from "lucide-react";
+import { OperationIcon } from "@/lib/OperationIcon";
 
 // ------------------- Helpers -------------------
 const getRandomNumber = (digits) => {
@@ -27,10 +28,23 @@ const calculate = (num1, num2, op) => {
     case "*":
       return num1 * num2;
     case "/":
-      return Math.floor(num1 / num2);
+      return num2 !== 0 ? Math.floor(num1 / num2) : null;
+    case "digitSum":
+      return digitSum(num1 + num2);
     default:
       return null;
   }
+};
+
+const digitSum = (num) => {
+  let n = Math.abs(num); // ignore sign
+  while (n >= 10) {
+    n = n
+      .toString()
+      .split("")
+      .reduce((sum, digit) => sum + parseInt(digit), 0);
+  }
+  return n;
 };
 
 const formatTime = (totalSeconds) => {
@@ -147,7 +161,7 @@ export default function Home() {
   return (
     <>
       <Header />
-      <div className="flex items-center justify-center mt-12 lg:mt-0 min-h-screen mx-auto">
+      <div className="flex items-center justify-center mt-12 lg:mt-0 min-h-[80vh] lg:min-h-screen mx-auto">
         <div className="w-full max-w-xl mx-auto bg-neutral-950 lg:bg-neutral-950 border-0 lg:border lg:border-neutral-800 rounded-none lg:rounded-2xl lg:shadow-sm p-1">
           {/* Setup Screen */}
           {!isTesting && !finished && (
@@ -185,7 +199,7 @@ export default function Home() {
                   }
                 />
                 <Button type="submit" className="w-full mt-3">
-                  Generate
+                  New Set <Plus />
                 </Button>
               </div>
             </form>
@@ -229,8 +243,9 @@ export default function Home() {
                 <ScrollArea className="w-full h-48">
                   <div>
                     {problems.map((p, i) => (
-                      <p key={i} className="font-mono">
-                        {i + 1}. {p.num1} {p.op} {p.num2} = {p.answer}
+                      <p key={i} className="font-mono flex items-center gap-1">
+                        {i + 1}. {p.num1} {<OperationIcon op={p.op} />} {p.num2}{" "}
+                        = {p.answer}
                         <span className="ml-2 text-sm text-gray-500">
                           ({p.time?.toFixed(2)}s)
                         </span>
