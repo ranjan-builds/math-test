@@ -5,6 +5,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 
 const Selections = ({
@@ -53,21 +55,28 @@ const Selections = ({
             <SelectValue placeholder="Choose operation" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="+">
-              <Plus className="mr-1" /> Addition
-            </SelectItem>
-            <SelectItem value="*">
-              <X className="mr-1" /> Multiplication
-            </SelectItem>
-            <SelectItem value="-">
-              <Minus className="mr-1" /> Subtraction
-            </SelectItem>
-            <SelectItem value="/">
-              <Divide className="mr-1" /> Division
-            </SelectItem>
-            <SelectItem value="digitSum">
-              <CircleDot className="mr-1" /> Digital Sum
-            </SelectItem>
+            <SelectGroup>
+              <SelectLabel>General Operations</SelectLabel>
+              <SelectItem value="+">
+                <Plus className="mr-1" /> Addition
+              </SelectItem>
+              <SelectItem value="*">
+                <X className="mr-1" /> Multiplication
+              </SelectItem>
+              <SelectItem value="-">
+                <Minus className="mr-1" /> Subtraction
+              </SelectItem>
+              <SelectItem value="/">
+                <Divide className="mr-1" /> Division
+              </SelectItem>
+            </SelectGroup>
+            <SelectGroup>
+              <SelectLabel>Other Operations</SelectLabel>
+
+              <SelectItem value="digitSum">
+                <CircleDot className="mr-1" /> Digital Sum
+              </SelectItem>
+            </SelectGroup>
           </SelectContent>
         </Select>
       </div>

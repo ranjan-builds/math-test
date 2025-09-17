@@ -3,10 +3,10 @@ import React from "react";
 
 const Header = () => {
   return (
-    <header className=" border-b text-white p-3 flex items-center fixed top-0 left-0 w-full justify-between">
+    <header className=" border-b text-white p-3 px-6 flex items-center fixed top-0 left-0 w-full justify-between">
       <div className="flex items-center">
         <Sigma />
-        <h1 className="text-xl font-bold">Math Trainer</h1>
+        <h1 className="text-xl font-semibold">Math Trainer</h1>
       </div>
       <a
         href="https://github.com/ranjan-builds"
