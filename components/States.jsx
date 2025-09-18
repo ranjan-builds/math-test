@@ -22,14 +22,23 @@ const States = ({ setAboart, count, currentIndex, finished }) => {
   const formatted = `${minutes}:${seconds.toString().padStart(2, "0")}`;
 
   return (
-    <div className="w-full flex justify-between items-center px-3 py-4">
-      <Button onClick={setAboart} variant={"outline"}>
+    <div className="w-full flex justify-between items-center px-1 lg:px-3 py-4">
+      <Button onClick={setAboart} variant="outline">
         Abort
       </Button>
-      <span>{formatted}</span>
-      <span>
+
+      {/* Timer button with blinking after 15s */}
+      <Button
+        className={
+          elapsedTime > 15 ? "animate-pulse bg-red-500 text-white" : ""
+        }
+      >
+        {formatted}
+      </Button>
+
+      <Button variant="outline">
         {currentIndex + 1}/{count}
-      </span>
+      </Button>
     </div>
   );
 };

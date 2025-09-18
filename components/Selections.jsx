@@ -10,11 +10,11 @@ import {
 } from "@/components/ui/select";
 
 const Selections = ({
-  firstValue,
+  firstDigits,
   onFirstChange,
   operation,
   onOperationChange,
-  secondValue,
+  secondDigits,
   onSecondValueChange,
 }) => {
   return (
@@ -24,11 +24,7 @@ const Selections = ({
         <label className="text-sm font-medium text-neutral-300">
           Select First
         </label>
-        <Select
-          defaultValue="2"
-          value={firstValue}
-          onValueChange={onFirstChange}
-        >
+        <Select value={firstDigits} onValueChange={onFirstChange}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="2" />
           </SelectTrigger>
@@ -86,11 +82,7 @@ const Selections = ({
         <label className="text-sm font-medium text-neutral-300">
           Select Layout
         </label>
-        <Select
-          defaultValue="2"
-          value={secondValue}
-          onValueChange={onSecondValueChange}
-        >
+        <Select value={secondDigits} onValueChange={onSecondValueChange}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="2" />
           </SelectTrigger>

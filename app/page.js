@@ -161,8 +161,8 @@ export default function Home() {
   return (
     <>
       <Header />
-      <div className="flex items-center justify-center mt-12 lg:mt-0 min-h-[80vh] lg:min-h-screen mx-auto">
-        <div className="w-full max-w-xl mx-auto bg-neutral-950 lg:bg-neutral-950 border-0 lg:border lg:border-neutral-800 rounded-none lg:rounded-2xl lg:shadow-sm p-1">
+      <div className="flex items-center justify-center  mt-12 lg:mt-0  lg:h-screen ">
+        <div className="w-full max-w-xl  bg-neutral-950 lg:bg-neutral-950 border-0 lg:border lg:border-neutral-800 rounded-none lg:rounded-2xl lg:shadow-sm p-1">
           {/* Setup Screen */}
           {!isTesting && !finished && (
             <form
